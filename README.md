@@ -4,10 +4,10 @@ A two-line, truecolor statusline for [Claude Code](https://docs.claude.com/en/do
 
 一個給 Claude Code 用的雙行 truecolor 狀態列 —— 顯示 model、context 用量、git 狀態、花費、cache 命中率與 rate-limit 進度條，並可選配跨壓縮的進度任務列。
 
-![statusline screenshot](assets/screenshot.png)
+![Claude Code statusline — four states from fresh to critical](assets/screenshot.png)
 
-> 截圖待補：把一張實際終端機畫面放到 `assets/screenshot.png`。
-> Screenshot pending: drop a real terminal capture at `assets/screenshot.png`.
+> 由上到下:fresh → busy → high → critical;context 用量、cost 與 rate-limit 由綠轉紅。單張狀態圖見 [`assets/`](assets/)。
+> Top to bottom: fresh → busy → high → critical; context, cost and rate limits shift green → red. Individual state images live in [`assets/`](assets/).
 
 `繁體中文` ↓ ｜ [English](#english)
 
