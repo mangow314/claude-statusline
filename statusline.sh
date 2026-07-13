@@ -9,6 +9,16 @@ if [ -z "$input" ]; then
     exit 0
 fi
 
+# Threshold single-source: the [1M] badge and the jq window default below both need the
+# "standard" (non-1M) model window. Prefer _lib/ctx-thresholds.sh (CTX_STD_MODEL_WINDOW)
+# when present; otherwise fall back to 200k so this runs standalone (installs without the
+# lib). Capture the raw env override first — the WIN>CTX guard needs the value Claude Code
+# actually sees, not the lib's canonical default. A missing lib degrades gracefully and
+# never blocks the render.
+_RAW_ACWINDOW="${CLAUDE_CODE_AUTO_COMPACT_WINDOW:-}"
+source "$HOME/.claude/hooks/_lib/ctx-thresholds.sh" 2>/dev/null || true
+std_model_window="${CTX_STD_MODEL_WINDOW:-200000}"
+
 # ── Colors ──────────────────────────────────────────────
 reset='\033[0m'
 
@@ -31,6 +41,7 @@ c_cost_high='\033[1;38;2;255;80;50m'       # cost > $2 — red-orange
 c_cost_weekly='\033[38;2;230;200;90m'      # weekly total — clean gold
 c_session='\033[38;2;150;200;255m'         # session elapsed — soft sky blue
 c_ctx_1m='\033[1;38;2;100;220;255m'        # 1M context badge — bright cyan
+c_win_mismatch='\033[1;38;2;255;40;40m'    # WINDOW override > model's real window — red warning
 c_cache_good='\033[38;2;100;220;130m'      # cache hit ≥90% — soft green
 c_cache_mid='\033[38;2;255;210;0m'         # cache hit 60-89% — yellow
 c_cache_low='\033[38;2;255;120;120m'       # cache hit <60% — soft red
@@ -150,7 +161,8 @@ render_rate_bar() {
 settings_file="$HOME/.claude/settings.json"
 [ -f "$settings_file" ] || settings_file="/dev/null"
 
-read_json=$(echo "$input" | jq -r --slurpfile settings "$settings_file" '[
+read_json=$(echo "$input" | jq -r --slurpfile settings "$settings_file" \
+    --argjson stdwin "$std_model_window" '[
     .model.display_name // "Claude",
     (.context_window.used_percentage // 0 | round | tostring),
     .vim.mode // "",
@@ -166,7 +178,7 @@ read_json=$(echo "$input" | jq -r --slurpfile settings "$settings_file" '[
     (.rate_limits.seven_day.resets_at // null | if . then tostring else "" end),
     (.cost.total_duration_ms // 0 | tostring),
     (.effort.level // $settings[0].effortLevel // "default"),
-    (.context_window.context_window_size // 200000 | tostring),
+    (.context_window.context_window_size // $stdwin | tostring),
     (.workspace.git_worktree // ""),
     (.thinking.enabled | if . == null then "" else tostring end),
     (.context_window.current_usage.input_tokens // 0 | tostring),
@@ -262,8 +274,16 @@ done
 ctx_meter+="${reset}"
 
 line1="${c_model}${model_icon} ${model_name}${reset}"
-if [[ "$ctx_size" =~ ^[0-9]+$ ]] && [ "$ctx_size" -gt 200000 ]; then
+if [[ "$ctx_size" =~ ^[0-9]+$ ]] && [ "$ctx_size" -gt "$std_model_window" ]; then
     line1+=" ${c_ctx_1m}[1M]${reset}"
+fi
+# Window-mismatch warning (belt-and-suspenders): an env-overridden auto-compact window
+# larger than the model's real window (e.g. after switching off a 1M model) would trigger
+# premature compaction. Uses the raw env value — not the lib-derived one — to reflect what
+# Claude Code actually applied. Silent when unset (installs without the override).
+if [[ "$_RAW_ACWINDOW" =~ ^[0-9]+$ ]] && [[ "$ctx_size" =~ ^[0-9]+$ ]] \
+    && [ "$_RAW_ACWINDOW" -gt "$ctx_size" ]; then
+    line1+=" ${c_win_mismatch}⚠ WIN>CTX${reset}"
 fi
 line1+="${sep}${ctx_meter} ${ctx_color}${ctx_pct}%${reset}"
 line1+="${sep}${c_dir}${folder_icon} ${dirname}${reset}"

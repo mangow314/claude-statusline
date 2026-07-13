@@ -11,10 +11,13 @@ CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 
 mkdir -p "$CLAUDE_DIR" "$CLAUDE_DIR/hooks"
 
-install -m 0755 "$SRC_DIR/statusline.sh"      "$CLAUDE_DIR/statusline.sh"
+install -m 0755 "$SRC_DIR/statusline.sh"          "$CLAUDE_DIR/statusline.sh"
 echo "installed: $CLAUDE_DIR/statusline.sh"
 
-install -m 0755 "$SRC_DIR/inject-progress.sh" "$CLAUDE_DIR/hooks/inject-progress.sh"
+install -m 0755 "$SRC_DIR/subagent-statusline.sh" "$CLAUDE_DIR/subagent-statusline.sh"
+echo "installed: $CLAUDE_DIR/subagent-statusline.sh (optional — only used if you wire up subagentStatusLine below)"
+
+install -m 0755 "$SRC_DIR/inject-progress.sh"     "$CLAUDE_DIR/hooks/inject-progress.sh"
 echo "installed: $CLAUDE_DIR/hooks/inject-progress.sh (optional — only used if you wire up the hook below)"
 
 cat <<'EOF'
@@ -27,6 +30,13 @@ Next step: merge the following into ~/.claude/settings.json
     "statusLine": {
       "type": "command",
       "command": "bash \"$HOME/.claude/statusline.sh\""
+    }
+
+  Subagent statusline (optional — renders per-subagent rows during parallel work):
+
+    "subagentStatusLine": {
+      "type": "command",
+      "command": "bash \"$HOME/.claude/subagent-statusline.sh\""
     }
 
   Progress task bar (optional — lights up the leading task row):

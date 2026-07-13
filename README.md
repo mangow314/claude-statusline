@@ -107,6 +107,30 @@ phase: 2
 （之後接 現狀 / 下一步 / 卡點…，精簡 <2KB）
 ```
 
+### 選配：Subagent 狀態列
+
+`subagent-statusline.sh` 渲染 `subagentStatusLine`：並行子代理（subagent）執行時，每個子代理各佔一列，一眼看出狀態、model 層級、token 用量與經過時間。**不裝它主狀態列照常運作**——只是子代理列改回 Claude Code 預設樣式。
+
+每列顯示：狀態圖示（running / pending / completed / failed 各有顏色）、model 家族（haiku 綠／sonnet 藍／opus 橙／fable 洋紅）、任務名、label／type、token 數與經過時間。純吃 stdin JSON，無額外依賴。
+
+安裝：
+
+```bash
+cp subagent-statusline.sh ~/.claude/subagent-statusline.sh
+chmod +x ~/.claude/subagent-statusline.sh
+```
+
+把這段 merge 進 `~/.claude/settings.json`：
+
+```json
+{
+  "subagentStatusLine": {
+    "type": "command",
+    "command": "bash \"$HOME/.claude/subagent-statusline.sh\""
+  }
+}
+```
+
 ### 它會在你家目錄寫哪些檔案
 
 - `~/.claude/cost-ledger`：當週各 session 花費的彙總（純文字，自動建立/清理）
@@ -218,6 +242,30 @@ Merge this into `~/.claude/settings.json`:
 # one-line description of the current task
 phase: 2
 (then current-state / next-step / blockers…, kept under 2KB)
+```
+
+### Optional: Subagent statusline
+
+`subagent-statusline.sh` renders `subagentStatusLine`: during parallel subagent work, each subagent gets its own row — status, model tier, token usage and elapsed time at a glance. **The main statusline works fine without it** — subagent rows just fall back to Claude Code's default rendering.
+
+Each row shows: a status glyph (running / pending / completed / failed, color-coded), the model family (haiku green / sonnet blue / opus orange / fable magenta), the task name, its label/type, token count and elapsed time. It reads stdin JSON only, with no extra dependencies.
+
+Install:
+
+```bash
+cp subagent-statusline.sh ~/.claude/subagent-statusline.sh
+chmod +x ~/.claude/subagent-statusline.sh
+```
+
+Merge this into `~/.claude/settings.json`:
+
+```json
+{
+  "subagentStatusLine": {
+    "type": "command",
+    "command": "bash \"$HOME/.claude/subagent-statusline.sh\""
+  }
+}
 ```
 
 ### Files it writes under your home

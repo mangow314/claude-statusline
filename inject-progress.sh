@@ -62,6 +62,22 @@ case "$SOURCE" in
     ;;
   clear)
     emit_path_hint
+    # /clear is the preferred exit path (checkpoint→/clear→reload), but a stale INDEX may
+    # live under a different session_id dir (session_id can change after /clear), so scan
+    # every session dir for the freshest one (within 6h). Hint the path only — never
+    # re-inject content (/clear usually means "start over").
+    # Use find's %T@ directly rather than a second stat: this avoids a TOCTOU where the
+    # file vanishes between find and stat and an arithmetic error breaks this hook's
+    # "always exit 0" contract; a future mtime (clock skew) is clamped to 0.
+    FRESH_LINE=$(find "$CWD/.progress" -mindepth 2 -maxdepth 2 -name 'INDEX.md' -mmin -360 \
+                   -printf '%T@\t%p\n' 2>/dev/null | sort -rn | head -n 1)
+    if [ -n "$FRESH_LINE" ]; then
+      FRESH_TS=${FRESH_LINE%%$'\t'*}; FRESH_TS=${FRESH_TS%%.*}
+      FRESH=${FRESH_LINE#*$'\t'}
+      AGE_MIN=$(( ( $(date +%s) - FRESH_TS ) / 60 ))
+      [ "$AGE_MIN" -lt 0 ] && AGE_MIN=0
+      echo "(Recent INDEX detected: $FRESH, updated ~${AGE_MIN} min ago — may belong to a previous or parallel session. If this /clear is a checkpoint→/clear→reload flow, Read that file to resume; if you meant to start over, ignore it.)"
+    fi
     ;;
   startup|*)
     emit_path_hint
