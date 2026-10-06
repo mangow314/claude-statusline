@@ -29,8 +29,8 @@ c_branch='\033[38;2;80;160;255m'           # cool blue
 c_dirty='\033[1;38;2;255;50;50m'           # neon red
 c_wt='\033[1;38;2;255;180;0m'              # amber
 c_gray='\033[38;2;140;140;140m'            # labels / separators
-c_magenta='\033[38;2;190;90;160m'          # effort — medium pink-purple (low-freq)
-c_magenta_bright='\033[1;38;2;255;50;180m' # effort max — vivid magenta + bold
+c_effort='\033[38;2;184;187;38m'           # effort high/xhigh — gruvbox green (low-freq)
+c_effort_max='\033[1;38;2;200;230;60m'     # effort max — bright lime + bold
 c_teal='\033[38;2;0;200;180m'              # agent name
 c_coral='\033[38;2;230;175;130m'           # output style — warm peach (low-freq)
 c_rate_5h='\033[38;2;255;140;50m'          # 5H icon — neon orange
@@ -152,9 +152,10 @@ render_rate_bar() {
     color=$(color_for_pct "$pct")
     bar=$(build_gradient_bar "$pct" "$bar_width")
 
-    [ -n "$rate_lines" ] && rate_lines+="\n"
-    rate_lines+="${c_label}${icon} ${label}${reset} ${bar} ${color}$(printf '%3d' "$pct")%${reset}"
-    [ -n "$reset_time" ] && rate_lines+=" ${c_gray}↻ ${reset_time}${reset}"
+    # 5H and 7D share one line, separated by sep
+    [ -n "$rate_bars" ] && rate_bars+="$sep"
+    rate_bars+="${c_label}${icon} ${label}${reset} ${bar} ${color}$(printf '%3d' "$pct")%${reset}"
+    [ -n "$reset_time" ] && rate_bars+=" ${c_gray}↻ ${reset_time}${reset}"
 }
 
 # ── Extract JSON (single jq call, merged with settings) ─
@@ -242,7 +243,9 @@ fi
 
 if [ "$cache_valid" = false ]; then
     if git_branch=$(git -C "$cwd" symbolic-ref --short HEAD 2>/dev/null); then
-        if [ -n "$(git -C "$cwd" status --porcelain --no-optional-locks 2>/dev/null)" ]; then
+        # --no-optional-locks is a global git option and must come before the subcommand;
+        # after `status` git exits 129 and the dirty marker never shows
+        if [ -n "$(git --no-optional-locks -C "$cwd" status --porcelain 2>/dev/null)" ]; then
             git_dirty="*"
         fi
     fi
@@ -320,8 +323,8 @@ fi
 
 if [ -n "$effort" ]; then
     case "$effort" in
-        max)         line1+="${sep}${c_magenta_bright}${effort_icon} ${effort}${reset}" ;;
-        xhigh|high)  line1+="${sep}${c_magenta}${effort_icon} ${effort}${reset}" ;;
+        max)         line1+="${sep}${c_effort_max}${effort_icon} ${effort}${reset}" ;;
+        xhigh|high)  line1+="${sep}${c_effort}${effort_icon} ${effort}${reset}" ;;
         *)           line1+="${sep}${c_gray}${effort_icon} ${effort}${reset}" ;;
     esac
 fi
@@ -365,6 +368,11 @@ if [ -n "$cost_usd" ] && [ "$cost_usd" != "null" ]; then
 
     if [ -n "$session_id" ] && [ "$session_id" != "null" ]; then
         touch "$ledger"
+        # Temp file carries the PID: sessions refreshing at the same time each write their
+        # own file instead of truncating another's half-written one before its mv. A
+        # concurrent write can still drop the other session's row; it rewrites it on its
+        # next refresh, a few seconds later.
+        ledger_tmp="${ledger}.tmp.$$"
         # Single awk pass: prune old entries, upsert session, aggregate total
         # Output "SAME:total" if cost unchanged, otherwise just "total"
         result=$(awk -F'\t' -v OFS='\t' \
@@ -386,14 +394,14 @@ if [ -n "$cost_usd" ] && [ "$cost_usd" != "null" ]; then
             if (!found) { print sid, cost, ts > "/dev/fd/3"; total += cost }
             if (same) printf "SAME:"
             printf "%.2f", total
-        }' "$ledger" 3>"${ledger}.tmp" 2>/dev/null)
+        }' "$ledger" 3>"$ledger_tmp" 2>/dev/null)
 
         if [[ "$result" == SAME:* ]]; then
             weekly_total="${result#SAME:}"
-            rm -f "${ledger}.tmp"
+            rm -f "$ledger_tmp"
         else
             weekly_total="$result"
-            mv "${ledger}.tmp" "$ledger"
+            mv "$ledger_tmp" "$ledger"
         fi
     fi
 
@@ -426,13 +434,19 @@ if [ -n "$cost_usd" ] && [ "$cost_usd" != "null" ]; then
     fi
 fi
 
-# ── LINE 2+: Cost + Rate Limits ─────────────────────────
+# ── LINE 2–3: Cost, then 5H + 7D on one line ────────────
 rate_lines=""
-bar_width=30
+rate_bars=""
+# Two bars side by side: 20 cells each, about 85 columns in all
+bar_width=20
 
 rate_lines+="${cost_line}"
 render_rate_bar "5H" "$five_pct"  "$five_reset_epoch"  "$c_rate_5h" "$rate_5h_icon" "%-l:%M%P"
 render_rate_bar "7D" "$seven_pct" "$seven_reset_epoch" "$c_rate_7d" "$rate_7d_icon" "%b %-d %-l:%M%P"
+if [ -n "$rate_bars" ]; then
+    [ -n "$rate_lines" ] && rate_lines+="\n"
+    rate_lines+="$rate_bars"
+fi
 
 # ── Output ──────────────────────────────────────────────
 # Current task + phase (reads <cwd>/.progress/<session_id>/INDEX.md; hidden entirely when absent)

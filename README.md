@@ -1,8 +1,8 @@
 # Claude Code Statusline
 
-A four-line, truecolor statusline for [Claude Code](https://docs.claude.com/en/docs/claude-code) — model, context meter, git state, cost, cache hit rate and rate-limit bars, with an optional cross-compaction progress task bar.
+A three-line, truecolor statusline for [Claude Code](https://docs.claude.com/en/docs/claude-code) — model, context meter, git state, cost, cache hit rate and rate-limit bars, with an optional cross-compaction progress task bar.
 
-一個給 Claude Code 用的四行 truecolor 狀態列 —— 顯示 model、context 用量、git 狀態、花費、cache 命中率與 rate-limit 進度條，並可選配跨壓縮的進度任務列。
+一個給 Claude Code 用的三行 truecolor 狀態列 —— 顯示 model、context 用量、git 狀態、花費、cache 命中率與 rate-limit 進度條，並可選配跨壓縮的進度任務列。
 
 ![Claude Code statusline — four states from fresh to critical](assets/screenshot.png)
 
@@ -17,7 +17,7 @@ A four-line, truecolor statusline for [Claude Code](https://docs.claude.com/en/d
 
 ### 這是什麼
 
-Claude Code 允許你用一個吃 stdin JSON、吐 stdout 文字的指令客製狀態列。本腳本就是那個指令：把 Claude Code 餵進來的 session JSON 渲染成四行（cost 與 5H／7D rate-limit 會各佔一行），外加選配、置頂的任務列，成為資訊密度高的狀態列。
+Claude Code 允許你用一個吃 stdin JSON、吐 stdout 文字的指令客製狀態列。本腳本就是那個指令：把 Claude Code 餵進來的 session JSON 渲染成三行（cost 一行，5H／7D rate-limit 並排一行），外加選配、置頂的任務列，成為資訊密度高的狀態列。
 
 ### 顯示內容
 
@@ -29,10 +29,10 @@ Claude Code 允許你用一個吃 stdin JSON、吐 stdout 文字的指令客製�
 - Vim mode、output style 縮寫、subagent 名稱
 - Effort 等級（max/high 變色）、thinking 開關指示
 
-**第 2-4 行（cost 與 rate-limit）**
+**第 2-3 行（cost 與 rate-limit）**
 - 本次 session 花費 + 當週累計（`~/.claude/cost-ledger` 紀錄）
 - Session 經過時間、最近一次 API 呼叫的 cache 命中率
-- 5H / 7D rate-limit 漸層進度條 + reset 時間
+- 5H / 7D rate-limit 漸層進度條 + reset 時間，兩條並排在同一行（整行約 85 欄）
 
 **選配的置頂任務列**：見下方 [Progress 任務列](#選配progress-任務列)。
 
@@ -154,7 +154,7 @@ Claude Code 會把一份 session JSON 從 stdin 餵進腳本，欄位包含 `mod
 
 ### What it is
 
-Claude Code lets you customize the statusline with a command that reads session JSON on stdin and prints text on stdout. This script is that command: it renders the session JSON Claude Code feeds it into a dense four-line statusline — cost and the 5H/7D rate-limit bars each take a line — plus an optional leading task row.
+Claude Code lets you customize the statusline with a command that reads session JSON on stdin and prints text on stdout. This script is that command: it renders the session JSON Claude Code feeds it into a dense three-line statusline — cost on one line, the 5H/7D rate-limit bars side by side on the next — plus an optional leading task row.
 
 ### What it shows
 
@@ -166,10 +166,10 @@ Claude Code lets you customize the statusline with a command that reads session 
 - Vim mode, output-style abbreviation, subagent name
 - Effort level (max/high are colored), thinking on/off indicator
 
-**Lines 2-4 (cost & rate limits)**
+**Lines 2-3 (cost & rate limits)**
 - This session's cost + weekly total (tracked in `~/.claude/cost-ledger`)
 - Session elapsed time, and cache-hit ratio of the most recent API call
-- 5H / 7D rate-limit gradient bars + reset times
+- 5H / 7D rate-limit gradient bars + reset times, side by side on one line (about 85 columns)
 
 **Optional leading task row:** see [Progress task bar](#optional-progress-task-bar).
 
