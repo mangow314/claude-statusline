@@ -201,15 +201,21 @@ model_name="${model_name%% (*}"
 [ -n "$CLAUDE_CODE_EFFORT_LEVEL" ] && effort="$CLAUDE_CODE_EFFORT_LEVEL"
 
 # ── Nerd Font Icons ─────────────────────────────────────
-cost_icon=$'\uf06d'       #  fire (burn rate)
-folder_icon=$'\uf07b'     #  folder
-effort_icon=$'\uf013'  #  single cog (FA4) — tier via color + label
-style_icon=$'\uf040'      #  pencil
-agent_icon=$'\uf544'      #  robot
-rate_5h_icon=$'\uf017'    #  clock
-rate_7d_icon=$'\uf133'    #  calendar-alt
-session_icon=$'\uf2f2'    #  stopwatch
-model_icon=$'\uf2db'      #  microchip
+# Icons are written as \x byte escapes, not $'\uXXXX'. Bash expands \u through the current
+# locale's charset: under a non-UTF-8 locale (a tmux server or cron started without LANG)
+# it falls back to the literal text "\uF2DB". Byte escapes emit the UTF-8 bytes directly.
+# When changing one, re-derive the bytes from this table rather than editing them by hand:
+#   cost=U+F06D folder=U+F07B effort=U+F013 style=U+F040 agent=U+F544
+#   5h=U+F017 7d=U+F133 session=U+F2F2 model=U+F2DB vim=U+E62B
+cost_icon=$'\xef\x81\xad'       #  fire (burn rate)
+folder_icon=$'\xef\x81\xbb'     #  folder
+effort_icon=$'\xef\x80\x93'  #  single cog (FA4) — tier via color + label
+style_icon=$'\xef\x81\x80'      #  pencil
+agent_icon=$'\xef\x95\x84'      #  robot
+rate_5h_icon=$'\xef\x80\x97'    #  clock
+rate_7d_icon=$'\xef\x84\xb3'    #  calendar-alt
+session_icon=$'\xef\x8b\xb2'    #  stopwatch
+model_icon=$'\xef\x8b\x9b'      #  microchip
 
 # ── LINE 1 ──────────────────────────────────────────────
 [ -z "$cwd" ] || [ "$cwd" = "null" ] && cwd=$(pwd)
@@ -302,7 +308,7 @@ elif [ -n "$ws_git_worktree" ]; then
 fi
 
 if [ -n "$vim_mode" ] && [ "$vim_mode" != "null" ]; then
-    vim_icon=$'\ue62b'
+    vim_icon=$'\xee\x98\xab'
     case "$vim_mode" in
         NORMAL)        line1+="${sep}${c_vim_n} ${vim_icon} Normal ${reset}" ;;
         INSERT)        line1+="${sep}${c_vim_i} ${vim_icon} Insert ${reset}" ;;
