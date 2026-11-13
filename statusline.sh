@@ -343,8 +343,8 @@ rate_bars=""
 # Two bars side by side: 20 cells each; with session time and cache about 110 columns
 bar_width=20
 
-render_rate_bar "5H" "$five_pct"  "$five_reset_epoch"  "$c_rate_5h" "$rate_5h_icon" "%-l:%M%P"
-render_rate_bar "7D" "$seven_pct" "$seven_reset_epoch" "$c_rate_7d" "$rate_7d_icon" "%b %-d %-l:%M%P"
+render_rate_bar "5H" "$five_pct"  "$five_reset_epoch"  "$c_rate_5h" "$rate_5h_icon" "%-l:%M%p"
+render_rate_bar "7D" "$seven_pct" "$seven_reset_epoch" "$c_rate_7d" "$rate_7d_icon" "%b %-d %-l:%M%p"
 
 # Session elapsed time (wall-clock since this conversation started)
 session_dur=$(format_session_duration "$session_ms")
